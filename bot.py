@@ -37,6 +37,7 @@ from time import sleep
 import datetime, os
 
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
 import gspread
@@ -78,7 +79,7 @@ class SeleniumParser:
 
         option = Options()
         
-        option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
+        # option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
         # Отключаем всплывающие сообщения и окна браузера
         option.add_argument("--disable-infobars") 
         option.add_argument("start-maximized")
@@ -88,7 +89,7 @@ class SeleniumParser:
         })
 
 
-        self.browser = webdriver.Chrome(chrome_options=option)
+        self.browser = webdriver.Chrome(options=option)
         self.browser.maximize_window()
         self.browser.get(url)    
         sleep(2)
@@ -101,13 +102,13 @@ class SeleniumParser:
         Метод авторизации на сайте 
         """
 
-        login = self.browser.find_element_by_id('lable-login')
+        login = self.browser.find_element(By.ID, 'lable-login')
         login.send_keys(user_login)
 
-        password = self.browser.find_element_by_id('lable-password')
+        password = self.browser.find_element(By.ID, 'lable-password')
         password.send_keys(user_password)
 
-        button = self.browser.find_element_by_class_name('b-button')
+        button = self.browser.find_element(By.CLASS_NAME, 'b-button')
         button.click()
         print(success_message + '\tВошли в учетную запись...')
         sleep(6)
@@ -121,25 +122,32 @@ class SeleniumParser:
         настройка фильтров перед парсингом информации о заказах
         """
 
-        button_sales = self.browser.find_element_by_xpath("//div[@class='topMenu-new']//td[@class='topMenuItem-new'][2]")
+        button_sales = self.browser.find_element(By.XPATH, "//div[@class='topMenu-new']//td[@class='topMenuItem-new'][2]")
         button_sales.click()
-        sleep(2)
+        sleep(1)
 
-        button_orders = self.browser.find_element_by_xpath("//div[@class='subMenuContainer-new']//span")
+        button_orders = self.browser.find_element(By.XPATH, "//div[@class='subMenuContainer-new']//span")
         button_orders.click()
         print(success_message + "\tОткрыли таблицу с заказами покупателей за вчерашнее число...")
-        sleep(5)
+        sleep(3)
 
-        button_period = self.browser.find_element_by_xpath("//div[@class='period-filter-widget2-preset-label']")
+        button_period = self.browser.find_element(By.XPATH, "//div[@class='period-filter-widget2-preset-label']")
         button_period.click()
         sleep(1)
 
-        button_refresh = self.browser.find_element_by_class_name("b-tool-button")
+        button_refresh = self.browser.find_element(By.CLASS_NAME, "b-tool-button")
         button_refresh.click()
-
-        sleep(2)
-
+        sleep(1)
         self.parse_data()
+        while True:
+            try:
+                next_page = self.browser.find_element_by_xpath("//td[@class='next-page']//img[@class='gwt-Image']")
+                next_page.click()
+                sleep(3)
+                self.parse_data()
+
+            except BaseException:
+                break                
 
     def parse_data(self):
 
@@ -149,16 +157,15 @@ class SeleniumParser:
         После чего объединять всё воедино
         """
 
-
-        even_organizations = self.browser.find_elements_by_xpath("//td[@class='cellTableCell cellTableEvenRowCell '][3]")
-        odd_organizations = self.browser.find_elements_by_xpath("//td[@class='cellTableCell cellTableOddRowCell '][3]")
+        even_organizations = self.browser.find_elements(By.XPATH, "//td[@class='cellTableCell cellTableEvenRowCell '][3]")
+        odd_organizations = self.browser.find_elements(By.XPATH, "//td[@class='cellTableCell cellTableOddRowCell '][3]")
 
 
         all_organizations = even_organizations + odd_organizations
         text_organizations = [item.text for item in all_organizations]
 
-        even_comments = self.browser.find_elements_by_xpath("//td[@class='cellTableCell cellTableEvenRowCell '][7]")
-        odd_comments = self.browser.find_elements_by_xpath("//td[@class='cellTableCell cellTableOddRowCell '][7]")
+        even_comments = self.browser.find_elements(By.XPATH, "//td[@class='cellTableCell cellTableEvenRowCell '][7]")
+        odd_comments = self.browser.find_elements(By.XPATH, "//td[@class='cellTableCell cellTableOddRowCell '][7]")
 
         print(success_message + '\tСпарсили название организаций и комментарии к заказам...')   
 
@@ -166,10 +173,12 @@ class SeleniumParser:
         text_comments  = [item.text for item in all_comments]
 
         id_orders = [item.split(',')[0] for item in text_comments]
-        self.browser.quit()
+        # self.browser.quit()
 
         print(success_message + '\tСохраняем собранные данные...')
+
         self.save_data(text_organizations, id_orders)
+        print(text_organizations)
 
 
     def save_data(self, organizations, ids):
@@ -180,7 +189,7 @@ class SeleniumParser:
 
         filename = f'{history_directory}/parser_result.txt'
 
-        with open(filename, 'w') as file:
+        with open(filename, 'a') as file:
             for item in range(len(organizations)):
                 file.write(f'{organizations[item]} - {ids[item]} \n')
 
@@ -342,6 +351,7 @@ class Spreadsheet:
 
 bot_selenium = SeleniumParser(mysklag_login='vika@ermalovich1972', mysklag_password='Ugegeg')
 bot_selenium.start()
+bot_selenium.browser.quit()
 
 frequen_dict = bot_selenium.get_frequency_dict()
 
