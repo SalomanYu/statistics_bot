@@ -79,7 +79,7 @@ class SeleniumParser:
 
         option = Options()
         
-        # option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
+        option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
         # Отключаем всплывающие сообщения и окна браузера
         option.add_argument("--disable-infobars") 
         option.add_argument("start-maximized")
@@ -173,12 +173,10 @@ class SeleniumParser:
         text_comments  = [item.text for item in all_comments]
 
         id_orders = [item.split(',')[0] for item in text_comments]
-        # self.browser.quit()
 
         print(success_message + '\tСохраняем собранные данные...')
 
         self.save_data(text_organizations, id_orders)
-        print(text_organizations)
 
 
     def save_data(self, organizations, ids):
