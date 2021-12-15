@@ -55,7 +55,7 @@ os.makedirs(history_directory, exist_ok=True) # Создаем директор�
 success_message = '\033[2;30;42m [SUCCESS] \033[0;0m' 
 warning_message = '\033[2;30;43m [WARNING] \033[0;0m'
 
-result_parseer = f"{history_directory}/parser_result.txt"
+result_parser = f"{history_directory}/parser_result.txt"
 
 if result_parser:
    os.remove(result_parser) 
