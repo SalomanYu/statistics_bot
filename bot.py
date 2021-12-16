@@ -55,6 +55,10 @@ os.makedirs(history_directory, exist_ok=True) # Создаем директор�
 success_message = '\033[2;30;42m [SUCCESS] \033[0;0m' 
 warning_message = '\033[2;30;43m [WARNING] \033[0;0m'
 
+parse_result_file =  f'{history_directory}/parser_result.txt'
+
+if os.path.exists(parse_result_file):
+    os.remove(parse_result_file)
 
 
 class SeleniumParser: 
@@ -142,14 +146,13 @@ class SeleniumParser:
         self.parse_data()
         while True:
             try:
-                next_page = self.browser.find_element_by_xpath("//td[@class='next-page']//img[@class='gwt-Image']")
+                next_page = self.browser.find_element(By.XPATH, "//td[@class='next-page']//img[@class='gwt-Image']")
                 next_page.click()
                 sleep(3)
                 self.parse_data()
 
             except BaseException:
                 break                
-
     def parse_data(self):
 
         """
@@ -352,7 +355,7 @@ bot_selenium = SeleniumParser(mysklag_login='vika@ermalovich1972', mysklag_passw
 bot_selenium.start()
 bot_selenium.browser.quit()
 
-frequen_dict = bot_selenium.get_frequency_dict()
+# frequen_dict = bot_selenium.get_frequency_dict()
 
-spread = Spreadsheet()
-spread.run(frequen_dict)
+# spread = Spreadsheet()
+# spread.run(frequen_dict)
