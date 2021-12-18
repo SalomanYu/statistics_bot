@@ -246,7 +246,7 @@ class ExcelReader:
     def read(self):
         excel = pd.read_excel(self.path)
         excel.to_csv(f'{history_directory}/filename.csv')
-        self.file = pd.read_csv(f'{history_directory}/filename.csv', skiprows=4) # Сразу отсеяли всё лишнее
+        self.file = pd.read_csv('filename.csv', skiprows=4) # Сразу отсеяли всё лишнее
 
 
     def get_frequency_dict(self):
