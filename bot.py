@@ -140,6 +140,17 @@ class SeleniumParser:
         button_period.click()
         sleep(1)
 
+
+        button_status = self.browser.find_elements(By.XPATH, "//div[@class='tags-panel']")[3]
+        button_status.click()
+        sleep(1)
+
+        checkbox_status = self.browser.find_elements(By.XPATH, "//td[@class='checkbox']")[:6]
+        for checkbox in checkbox_status:
+            checkbox.click()
+
+        sleep(4)
+
         button_refresh = self.browser.find_element(By.CLASS_NAME, "b-tool-button")
         button_refresh.click()
         sleep(1)
@@ -355,7 +366,7 @@ bot_selenium = SeleniumParser(mysklag_login='vika@ermalovich1972', mysklag_passw
 bot_selenium.start()
 bot_selenium.browser.quit()
 
-# frequen_dict = bot_selenium.get_frequency_dict()
+frequen_dict = bot_selenium.get_frequency_dict()
 
-# spread = Spreadsheet()
-# spread.run(frequen_dict)
+spread = Spreadsheet()
+spread.run(frequen_dict)
