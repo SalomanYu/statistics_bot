@@ -39,7 +39,7 @@ import datetime, os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-
+import pandas as pd 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials  
 
@@ -236,6 +236,41 @@ class SeleniumParser:
         return frequency_dictionary
 
 
+
+class ExcelReader:
+
+    def __init__(self, path):
+        self.path = path
+        self.read()
+
+    def read(self):
+        excel = pd.read_excel(self.path)
+        excel.to_csv(f'{history_directory}/filename.csv')
+        self.file = pd.read_csv('filename.csv', skiprows=4) # Сразу отсеяли всё лишнее
+
+
+    def get_frequency_dict(self):
+        values = self.file.values
+
+        organizations_with_orders = []
+
+        for value in values:
+            organization = value[3]
+            order = value[5].split(',')[0]
+            organizations_with_orders.append((organization, order))
+
+        frequency_dictionary = {}
+        for item in organizations_with_orders:
+            count = 0
+            for item2 in organizations_with_orders:
+                if item[1] == item2[1]:
+                    count += 1
+            frequency_dictionary[item[1]] = count
+
+        return frequency_dictionary
+
+
+
 class Spreadsheet:
     """
     Этот класс выполняет второй блок вышеописанного алгоритма
@@ -356,18 +391,32 @@ class Spreadsheet:
                 tomorrow_col = worksheet.find(tomorrow).col
 
                 worksheet.update_cell(order_row, tomorrow_col, margin)
-                sleep(0.2)
+                sleep(0.4)
                 worksheet.update_cell(order_count_row, tomorrow_col, count)
         print(success_message + '\tБот успешно завершил свою работу')
 
 
 
+parse_method = int(input('Каким образом вы хотите спарсить данные?\n1. Selenuim\n2. Excel-файл\nУкажите номер варианта: '))
 
-bot_selenium = SeleniumParser(mysklag_login='vika@ermalovich1972', mysklag_password='Ugegeg')
-bot_selenium.start()
-bot_selenium.browser.quit()
+if parse_method == 1:
+    bot_selenium = SeleniumParser(mysklag_login='vika@ermalovich1972', mysklag_password='Ugegeg')
+    bot_selenium.start()
+    bot_selenium.browser.quit()
 
-frequen_dict = bot_selenium.get_frequency_dict()
+    frequen_dict = bot_selenium.get_frequency_dict()
+
+elif parse_method == 2:
+    excel_path = input('Вставьте путь до excel-файла: ')
+
+    bot_excel = ExcelReader(excel_path)
+    frequen_dict = bot_excel.get_frequency_dict()
+
+else:
+    print('Нет такого варианта. Введите 1 или 2')
+    sleep(3)
+    quit()
+
 
 spread = Spreadsheet()
 spread.run(frequen_dict)
