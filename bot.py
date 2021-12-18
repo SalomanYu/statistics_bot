@@ -252,8 +252,8 @@ class Spreadsheet:
         print(success_message + '\tПодключились к таблице расчетов')
         first_org_margins = self.get_margin_by_organization(spread, 'Александров А.А', frequency_dictionary) # Сбор маржи определенной организации
         
-        print(warning_message + '\tБот взял паузу на одну минуту, чтобы избежать лимита на количество запросов в минуту.')
-        sleep(80) # Чтобы обойти лимит по количеству запросов Google API
+        print(warning_message + '\tБот взял паузу , чтобы избежать лимита на количество запросов в минуту.')
+        sleep(10) # Чтобы обойти лимит по количеству запросов Google API
 
         second_org_margins = self.get_margin_by_organization(spread, "ИП Ермалович А.С", frequency_dictionary) # Сбор маржи определенной организации
         self.save_result(first_org_margins, second_org_margins)
@@ -339,8 +339,8 @@ class Spreadsheet:
         margins = []
 
         # ФАЙЛ ПОКА НЕ МОЖЕТ РАБОТАТЬ С ЛИСТАМИ ТАБЛИЦЫ 
-        print(warning_message + '\tБот взял паузу на одну минуту, чтобы избежать лимита на количество запросов в минуту.')
-        sleep(80) # Чтобы обойти лимит по количеству запросов Google API
+#        print(warning_message + '\tБот взял паузу на одну минуту, чтобы избежать лимита на количество запросов в минуту.')
+#        sleep(80) # Чтобы обойти лимит по количеству запросов Google API
         
         print(warning_message + '\tОбновляем статистику')
 
@@ -356,6 +356,7 @@ class Spreadsheet:
                 tomorrow_col = worksheet.find(tomorrow).col
 
                 worksheet.update_cell(order_row, tomorrow_col, margin)
+                sleep(0.2)
                 worksheet.update_cell(order_count_row, tomorrow_col, count)
         print(success_message + '\tБот успешно завершил свою работу')
 
