@@ -35,6 +35,7 @@ II. Google Sheet API
 
 from time import sleep
 import datetime, os
+from random import choice
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -42,6 +43,13 @@ from selenium.webdriver.chrome.options import Options
 import pandas as pd 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials  
+
+# Настройка цветного вывода в консоли
+from sys import platform
+if platform == 'win32':
+    import ctypes
+    kernel32 = ctypes.windll.kernel32
+    kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
 
 tomorrow = str((datetime.date.today() - datetime.timedelta(days=1)).day) # переменная для нахождения колонки вчерашнего дня в таблице статистики
@@ -89,6 +97,8 @@ class SeleniumParser:
         option.add_argument("--disable-infobars") 
         option.add_argument("start-maximized")
         option.add_argument("--disable-extensions")
+        option.add_experimental_option( "prefs",{'profile.managed_default_content_settings.javascript': 2}) # Отключение JavaScript
+        option.add_experimental_option('excludeSwitches', ['enable-logging']) # Исправление ошибок Selenium в Виндовс
         option.add_experimental_option("prefs", { 
             "profile.default_content_setting_values.notifications": 2
         })
@@ -378,7 +388,7 @@ class Spreadsheet:
 #        sleep(80) # Чтобы обойти лимит по количеству запросов Google API
         
         print(warning_message + '\tОбновляем статистику')
-
+        times_sleep = (0, 2, 5)
         with open(f'{history_directory}/margin_orders.txt', 'r') as file:
             for line in file:
                 order = line.split('-')[0].strip()
@@ -391,7 +401,7 @@ class Spreadsheet:
                 tomorrow_col = worksheet.find(tomorrow).col
 
                 worksheet.update_cell(order_row, tomorrow_col, margin)
-                sleep(0.4)
+                sleep(choice(times_sleep))
                 worksheet.update_cell(order_count_row, tomorrow_col, count)
         print(success_message + '\tБот успешно завершил свою работу')
 
