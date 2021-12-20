@@ -150,6 +150,9 @@ class SeleniumParser:
         button_period.click()
         sleep(1)
 
+        # previos_arrow = self.browser.find_elements(By.XPATH, "//table[@class='mutable-panel-inner field']//div[@class='presets-panel-inner-left-arrow']")[0]
+        # previos_arrow.click()
+        # sleep(1)
 
         button_status = self.browser.find_elements(By.XPATH, "//div[@class='tags-panel']")[3]
         button_status.click()
@@ -248,23 +251,36 @@ class SeleniumParser:
 
 
 class ExcelReader:
-
+    """
+    Класс предусматривает работу с иксель файлом, содержащим полную информацию о заказах покупателей за предыдущий день.
+    Если пользователь при работе с ботом выберет вариант парсинга через иксель, ему нужно будет указать полный путь до файла с расширением .xml
+    """
     def __init__(self, path):
+        """
+        Инициализация класса. Просто принимаем путь до файла
+        """
         self.path = path
         self.read()
 
     def read(self):
-        excel = pd.read_excel(self.path)
-        excel.to_csv(f'{history_directory}/filename.csv')
-        self.file = pd.read_csv(f'{history_directory}/filename.csv', skiprows=4) # Сразу отсеяли всё лишнее
+        """
+        Метод занимается чтением исходного иксель-файла и преобразованием его в csv-файл
+        csv-файл будет сохранен в историю. Можно подумать о том, чтобы через время удалять его
+        """
+        excel = pd.read_excel(self.path) # Пытаемся прочитать таблицу 
+        excel.to_csv(f'{history_directory}/filename.csv') # конвертируем xml > csv для удобной работы с данными
+        self.file = pd.read_csv(f'{history_directory}/filename.csv', skiprows=4) # Сразу отсеяли всё лишнее (Строки не имеющие отношения к информации о наименованиях организации и товаров)
 
 
     def get_frequency_dict(self):
-        values = self.file.values
+        """
+        Частотный словарь 
+        """
 
-        organizations_with_orders = []
+        values = self.file.values # все строки и колонки таблицы
+        organizations_with_orders = [] 
 
-        for value in values:
+        for value in values: 
             organization = value[3]
             order = value[5].split(',')[0]
             organizations_with_orders.append((organization, order))
@@ -298,7 +314,7 @@ class Spreadsheet:
         first_org_margins = self.get_margin_by_organization(spread, 'Александров А.А', frequency_dictionary) # Сбор маржи определенной организации
         
         print(warning_message + '\tБот взял паузу , чтобы избежать лимита на количество запросов в минуту.')
-        sleep(10) # Чтобы обойти лимит по количеству запросов Google API
+        sleep(60) # Чтобы обойти лимит по количеству запросов Google API
 
         second_org_margins = self.get_margin_by_organization(spread, "ИП Ермалович А.С", frequency_dictionary) # Сбор маржи определенной организации
         self.save_result(first_org_margins, second_org_margins)
@@ -384,11 +400,11 @@ class Spreadsheet:
         margins = []
 
         # ФАЙЛ ПОКА НЕ МОЖЕТ РАБОТАТЬ С ЛИСТАМИ ТАБЛИЦЫ 
-#        print(warning_message + '\tБот взял паузу на одну минуту, чтобы избежать лимита на количество запросов в минуту.')
-#        sleep(80) # Чтобы обойти лимит по количеству запросов Google API
+        print(warning_message + '\tБот взял паузу на одну минуту, чтобы избежать лимита на количество запросов в минуту.')
+        sleep(80) # Чтобы обойти лимит по количеству запросов Google API
         
         print(warning_message + '\tОбновляем статистику')
-        times_sleep = (0, 2, 5)
+
         with open(f'{history_directory}/margin_orders.txt', 'r') as file:
             for line in file:
                 order = line.split('-')[0].strip()
@@ -399,9 +415,10 @@ class Spreadsheet:
                 order_row = worksheet.find(order).row
                 order_count_row = order_row - 1
                 tomorrow_col = worksheet.find(tomorrow).col
-
+                # tomorrow_col = worksheet.find("18").col
+                # margin = '' для очистки полей 
+                # count = ''
                 worksheet.update_cell(order_row, tomorrow_col, margin)
-                sleep(choice(times_sleep))
                 worksheet.update_cell(order_count_row, tomorrow_col, count)
         print(success_message + '\tБот успешно завершил свою работу')
 
@@ -430,3 +447,5 @@ else:
 
 spread = Spreadsheet()
 spread.run(frequen_dict)
+# spread.update_statistics_table()
+
