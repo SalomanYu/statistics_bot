@@ -92,12 +92,12 @@ class SeleniumParser:
 
         option = Options()
         
-        # option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
+        option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
         # Отключаем всплывающие сообщения и окна браузера
         option.add_argument("--disable-infobars") 
         option.add_argument("start-maximized")
         option.add_argument("--disable-extensions")
-        option.add_experimental_option( "prefs",{'profile.managed_default_content_settings.javascript': 2}) # Отключение JavaScript
+        # option.add_experimental_option( "prefs",{'profile.managed_default_content_settings.javascript': 2}) # Отключение JavaScript
         option.add_experimental_option('excludeSwitches', ['enable-logging']) # Исправление ошибок Selenium в Виндовс
         option.add_experimental_option("prefs", { 
             "profile.default_content_setting_values.notifications": 2
