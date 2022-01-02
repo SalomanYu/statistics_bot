@@ -411,38 +411,44 @@ class Spreadsheet:
                 margin = line.split('-')[1].replace('\n', '').strip().replace('.', ',')
                 count = line.split('-')[2].strip()
                 
-
                 order_row = worksheet.find(order).row
                 order_count_row = order_row - 1
                 tomorrow_col = worksheet.find(tomorrow).col
-                # tomorrow_col = worksheet.find("18").col
-                # margin = '' для очистки полей 
-                # count = ''
+
+                data_rows = worksheet.findall(tomorrow)
+                for item in data_rows:
+                    if item.row == order_row-2:
+                        tomorrow_col = item.col
+                        break
+
                 worksheet.update_cell(order_row, tomorrow_col, margin)
                 worksheet.update_cell(order_count_row, tomorrow_col, count)
         print(success_message + '\tБот успешно завершил свою работу')
 
 
 
-parse_method = int(input('Каким образом вы хотите спарсить данные?\n1. Selenuim\n2. Excel-файл\nУкажите номер варианта: '))
+# parse_method = int(input('Каким образом вы хотите спарсить данные?\n1. Selenuim\n2. Excel-файл\nУкажите номер варианта: '))
 
-if parse_method == 1:
-    bot_selenium = SeleniumParser(mysklag_login='vika@ermalovich1972', mysklag_password='Ugegeg')
-    bot_selenium.start()
-    bot_selenium.browser.quit()
+# if parse_method == 1:
+    # bot_selenium = SeleniumParser(mysklag_login='vika@ermalovich1972', mysklag_password='Ugegeg')
+#     bot_selenium.start()
+#     bot_selenium.browser.quit()
 
-    frequen_dict = bot_selenium.get_frequency_dict()
+#     frequen_dict = bot_selenium.get_frequency_dict()
 
-elif parse_method == 2:
-    excel_path = input('Вставьте путь до excel-файла: ')
+# elif parse_method == 2:
+#     excel_path = input('Вставьте путь до excel-файла: ')
 
-    bot_excel = ExcelReader(excel_path)
-    frequen_dict = bot_excel.get_frequency_dict()
+#     bot_excel = ExcelReader(excel_path)
+#     frequen_dict = bot_excel.get_frequency_dict()
 
-else:
-    print('Нет такого варианта. Введите 1 или 2')
-    sleep(3)
-    quit()
+# else:
+#     print('Нет такого варианта. Введите 1 или 2')
+#     sleep(3)
+#     quit()
+
+ex = ExcelReader('/home/saloman/Downloads/02.01.xls')
+frequen_dict = ex.get_frequency_dict()
 
 spread = Spreadsheet()
 spread.run(frequen_dict)
