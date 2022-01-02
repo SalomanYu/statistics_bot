@@ -395,7 +395,7 @@ class Spreadsheet:
         """
 
         spread = self.auth_spread('1rEGdqDGFzdaSAlTzjiFt-GlW-scgLx2-UDgQdN0PL_s')
-        worksheet = spread.worksheet('Статистика (Декабрь)')
+        worksheet = spread.get_worksheet(1)
         orders = []
         margins = []
 
@@ -444,8 +444,6 @@ else:
     sleep(3)
     quit()
 
-
 spread = Spreadsheet()
 spread.run(frequen_dict)
-# spread.update_statistics_table()
 
