@@ -330,7 +330,7 @@ class Spreadsheet:
 
 
         scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name('rosya-project-91e7c34fdc81.json', scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name('morbot-338716-b219142d9c70.json', scope)
 
         gc = gspread.authorize(credentials)
         spread = gc.open_by_key(spread_id)
