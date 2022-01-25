@@ -33,6 +33,7 @@ II. Google Sheet API
 
 
 
+from curses import update_lines_cols
 from time import sleep
 import datetime, os
 from random import choice
@@ -46,6 +47,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 # Настройка цветного вывода в консоли
 from sys import platform
+
 if platform == 'win32':
     import ctypes
     kernel32 = ctypes.windll.kernel32
@@ -314,7 +316,7 @@ class Spreadsheet:
         first_org_margins = self.get_margin_by_organization(spread, 'Александров А.А', frequency_dictionary) # Сбор маржи определенной организации
         
         print(warning_message + '\tБот взял паузу , чтобы избежать лимита на количество запросов в минуту.')
-        sleep(60) # Чтобы обойти лимит по количеству запросов Google API
+        # sleep(60) # Чтобы обойти лимит по количеству запросов Google API
 
         second_org_margins = self.get_margin_by_organization(spread, "ИП Ермалович А.С", frequency_dictionary) # Сбор маржи определенной организации
         self.save_result(first_org_margins, second_org_margins)
@@ -341,17 +343,26 @@ class Spreadsheet:
         СОбираем маржу и высчитываем общую прибыль
         """
 
+
         worksheet = self.open_worksheet(spread, organization) # открываем нужную страницу, полагаясь на название организации
         col_margin = worksheet.find('Маржа').col
         organization_margin_orders = []
         
-        for order in frequency_dictionary:
-            row_order = worksheet.find(str(order))
-            if row_order != None:
-                margin_order = worksheet.cell(row_order.row, col_margin).value
-                amount_margin_order = float(margin_order.split('₽')[0].replace(',', '.')) * frequency_dictionary[order]
-                organization_margin_orders.append((order, round(amount_margin_order, 2), frequency_dictionary[order]))
+        def collect_margin_orders(order):
+            try:
+                row_order = worksheet.find(str(order))
+                if row_order != None:
+                    margin_order = worksheet.cell(row_order.row, col_margin).value
+                    amount_margin_order = float(margin_order.split('₽')[0].replace(',', '.')) * frequency_dictionary[order]
+                    organization_margin_orders.append((order, round(amount_margin_order, 2), frequency_dictionary[order]))
+            except gspread.exceptions.APIError:
+                print(warning_message + '\tБот превысил лимит запросов. Автоматически продолжит работу через 20 секунд.')
+                sleep(20)
+                collect_margin_orders(order)
 
+        for order in frequency_dictionary:
+           collect_margin_orders(order) 
+           
         print(success_message + '\tСобрали маржу организации: ', organization)
         return organization_margin_orders
 
@@ -395,22 +406,19 @@ class Spreadsheet:
         """
 
         spread = self.auth_spread('1rEGdqDGFzdaSAlTzjiFt-GlW-scgLx2-UDgQdN0PL_s')
+        # spread = self.auth_spread('1J6EJ601kR_S1_sMDFk4ibzMaG5mEgWUMcV1e_jL67Qs')
         worksheet = spread.get_worksheet(1)
         orders = []
         margins = []
 
         # ФАЙЛ ПОКА НЕ МОЖЕТ РАБОТАТЬ С ЛИСТАМИ ТАБЛИЦЫ 
-        print(warning_message + '\tБот взял паузу на одну минуту, чтобы избежать лимита на количество запросов в минуту.')
-        sleep(80) # Чтобы обойти лимит по количеству запросов Google API
+        # print(warning_message + '\tБот взял паузу на одну минуту, чтобы избежать лимита на количество запросов в минуту.')
+        # sleep(80) # Чтобы обойти лимит по количеству запросов Google API
         
         print(warning_message + '\tОбновляем статистику')
 
-        with open(f'{history_directory}/margin_orders.txt', 'r') as file:
-            for line in file:
-                order = line.split('-')[0].strip()
-                margin = line.split('-')[1].replace('\n', '').strip().replace('.', ',')
-                count = line.split('-')[2].strip()
-                
+        def update_order(order, margin, count):
+            try:
                 order_row = worksheet.find(order).row
                 order_count_row = order_row - 1
                 tomorrow_col = worksheet.find(tomorrow).col
@@ -423,6 +431,24 @@ class Spreadsheet:
 
                 worksheet.update_cell(order_row, tomorrow_col, margin)
                 worksheet.update_cell(order_count_row, tomorrow_col, count)
+            except gspread.exceptions.APIError:
+                print(warning_message + '\tБот превысил лимит запросов. Автоматически продолжит работу через 20 секунд.')
+                sleep(20)
+                update_order(order, margin, count)
+            except BaseException as error:
+                print(error)
+
+
+        with open(f'{history_directory}/margin_orders.txt', 'r') as file:
+            for line in file:
+                order = line.split('-')[0].strip()
+                margin = line.split('-')[1].replace('\n', '').strip().replace('.', ',')
+                count = line.split('-')[2].strip()
+                
+                update_order(order, margin, count)
+                
+                
+                
         print(success_message + '\tБот успешно завершил свою работу')
 
 
