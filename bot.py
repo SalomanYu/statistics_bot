@@ -33,7 +33,6 @@ II. Google Sheet API
 
 
 
-from curses import update_lines_cols
 from time import sleep
 import datetime, os
 from random import choice
