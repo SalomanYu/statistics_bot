@@ -93,7 +93,7 @@ class SeleniumParser:
 
         option = Options()
         
-        # option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
+        option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
         # Отключаем всплывающие сообщения и окна браузера
         option.add_argument("--disable-infobars") 
         option.add_argument("start-maximized")
