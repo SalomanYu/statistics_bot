@@ -93,7 +93,7 @@ class SeleniumParser:
 
         option = Options()
         
-        option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
+        # option.add_argument("--headless") # ФОНОВЫЙ РЕЖИМ   
         # Отключаем всплывающие сообщения и окна браузера
         option.add_argument("--disable-infobars") 
         option.add_argument("start-maximized")
@@ -159,10 +159,11 @@ class SeleniumParser:
         button_status.click()
         sleep(1)
 
-        checkbox_status = self.browser.find_elements(By.XPATH, "//td[@class='checkbox']")[:6]
-        for checkbox in checkbox_status:
+        all_checkbox_status = self.browser.find_elements(By.XPATH, "//td[@class='checkbox']")
+        required_checkbox_status = all_checkbox_status[:6] + all_checkbox_status[-3:]
+        for checkbox in required_checkbox_status[:-1]:
             checkbox.click()
-
+    
         sleep(4)
 
         button_refresh = self.browser.find_element(By.CLASS_NAME, "b-tool-button")
@@ -418,7 +419,7 @@ class Spreadsheet:
 
         def update_order(order, margin, count):
             try:
-                order_row = worksheet.find(order).row
+                order_row = worksheet.find(order).row + 1
                 order_count_row = order_row - 1
                 tomorrow_col = worksheet.find(tomorrow).col
 
