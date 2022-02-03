@@ -36,6 +36,8 @@ II. Google Sheet API
 from time import sleep
 import datetime, os
 from random import choice
+import xlrd
+
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -207,6 +209,7 @@ class SeleniumParser:
         print(success_message + '\tСохраняем собранные данные...')
 
         self.save_data(text_organizations, id_orders)
+        print(id_orders)
 
 
     def save_data(self, organizations, ids):
@@ -261,17 +264,9 @@ class ExcelReader:
         """
         Инициализация класса. Просто принимаем путь до файла
         """
-        self.path = path
-        self.read()
 
-    def read(self):
-        """
-        Метод занимается чтением исходного иксель-файла и преобразованием его в csv-файл
-        csv-файл будет сохранен в историю. Можно подумать о том, чтобы через время удалять его
-        """
-        excel = pd.read_excel(self.path) # Пытаемся прочитать таблицу 
-        excel.to_csv(f'{history_directory}/filename.csv') # конвертируем xml > csv для удобной работы с данными
-        self.file = pd.read_csv(f'{history_directory}/filename.csv', skiprows=4) # Сразу отсеяли всё лишнее (Строки не имеющие отношения к информации о наименованиях организации и товаров)
+        self.workbook = xlrd.open_workbook(path)
+        self.worksheet = self.workbook.sheet_by_index(0)
 
 
     def get_frequency_dict(self):
@@ -279,13 +274,12 @@ class ExcelReader:
         Частотный словарь 
         """
 
-        values = self.file.values # все строки и колонки таблицы
-        organizations_with_orders = [] 
+        organizations = [item for item in self.worksheet.col_values(2) if item != '']
+        orders = [item.split(',')[0] for item in self.worksheet.col_values(4) if item != '']
 
-        for value in values: 
-            organization = value[3]
-            order = value[5].split(',')[0]
-            organizations_with_orders.append((organization, order))
+        organizations_with_orders = []
+        for item in range(len(orders)):
+            organizations_with_orders.append((organizations[item], orders[item]))
 
         frequency_dictionary = {}
         for item in organizations_with_orders:
@@ -295,7 +289,11 @@ class ExcelReader:
                     count += 1
             frequency_dictionary[item[1]] = count
 
+        # print(frequency_dictionary)
         return frequency_dictionary
+
+
+
 
 
 
@@ -473,8 +471,8 @@ else:
     sleep(3)
     quit()
 
-# ex = ExcelReader('/home/saloman/Downloads/02.01.xls')
-# frequen_dict = ex.get_frequency_dict()
+ex = ExcelReader('/home/saloman/Downloads/02.01.xls')
+frequen_dict = ex.get_frequency_dict()
 
 spread = Spreadsheet()
 spread.run(frequen_dict)
