@@ -260,13 +260,24 @@ class ExcelReader:
     Класс предусматривает работу с иксель файлом, содержащим полную информацию о заказах покупателей за предыдущий день.
     Если пользователь при работе с ботом выберет вариант парсинга через иксель, ему нужно будет указать полный путь до файла с расширением .xml
     """
-    def __init__(self, path):
+    def __init__(self):
         """
         Инициализация класса. Просто принимаем путь до файла
         """
 
-        self.workbook = xlrd.open_workbook(path)
-        self.worksheet = self.workbook.sheet_by_index(0)
+        import os
+        folder_path = 'Excel'
+
+        for file in os.listdir(folder_path):
+            ext = file.split('.')[1]
+            if ext in ('xls', 'xlsx'):
+                self.workbook = xlrd.open_workbook(f"Excel/{file}")
+                self.worksheet = self.workbook.sheet_by_index(0)
+                self.get_frequency_dict()
+                os.remove(f"Excel/{file}")
+                quit()
+        print(warning_message + '\tВ папке нет excel-файлов')
+        quit()
 
 
     def get_frequency_dict(self):
@@ -461,9 +472,9 @@ if parse_method == 1:
     frequen_dict = bot_selenium.get_frequency_dict()
 
 elif parse_method == 2:
-    excel_path = input('Вставьте путь до excel-файла: ')
+    # excel_path = input('Вставьте путь до excel-файла: ')
 
-    bot_excel = ExcelReader(excel_path)
+    bot_excel = ExcelReader()
     frequen_dict = bot_excel.get_frequency_dict()
 
 else:
@@ -471,8 +482,8 @@ else:
     sleep(3)
     quit()
 
-ex = ExcelReader('/home/saloman/Downloads/02.01.xls')
-frequen_dict = ex.get_frequency_dict()
+# ex = ExcelReader('/home/saloman/Downloads/02.01.xls')
+# frequen_dict = ex.get_frequency_dict()
 
 spread = Spreadsheet()
 spread.run(frequen_dict)
