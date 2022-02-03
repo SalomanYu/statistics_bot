@@ -265,6 +265,8 @@ class ExcelReader:
         Инициализация класса. Просто принимаем путь до файла
         """
 
+
+    def open_excel(self):
         import os
         folder_path = 'Excel'
 
@@ -273,12 +275,12 @@ class ExcelReader:
             if ext in ('xls', 'xlsx'):
                 self.workbook = xlrd.open_workbook(f"Excel/{file}")
                 self.worksheet = self.workbook.sheet_by_index(0)
-                self.get_frequency_dict()
+                freq_dict = self.get_frequency_dict()
                 os.remove(f"Excel/{file}")
-                quit()
+                return freq_dict
+
         print(warning_message + '\tВ папке нет excel-файлов')
         quit()
-
 
     def get_frequency_dict(self):
         """
@@ -475,8 +477,10 @@ elif parse_method == 2:
     # excel_path = input('Вставьте путь до excel-файла: ')
 
     bot_excel = ExcelReader()
-    frequen_dict = bot_excel.get_frequency_dict()
-
+    frequen_dict = bot_excel.open_excel()
+    # frequen_dict = bot_excel.get_frequency_dict()
+    spread = Spreadsheet()
+    spread.run(frequen_dict)
 else:
     print('Нет такого варианта. Введите 1 или 2')
     sleep(3)
@@ -485,6 +489,5 @@ else:
 # ex = ExcelReader('/home/saloman/Downloads/02.01.xls')
 # frequen_dict = ex.get_frequency_dict()
 
-spread = Spreadsheet()
-spread.run(frequen_dict)
+
 
