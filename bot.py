@@ -68,8 +68,8 @@ warning_message = '\033[2;30;43m [WARNING] \033[0;0m'
 
 parse_result_file =  f'{history_directory}/parser_result.txt'
 
-if os.path.exists(parse_result_file):
-    os.remove(parse_result_file)
+# if os.path.exists(parse_result_file):
+    # os.remove(parse_result_file)
 
 
 class SeleniumParser: 
@@ -324,12 +324,12 @@ class Spreadsheet:
         spread = self.auth_spread('1bGbNieNgqDNSORaphLhLOHUbIUE00yxA0q_b4HsNclM') # инициализация таблицы 
 
         print(success_message + '\tПодключились к таблице расчетов')
-        first_org_margins = self.get_margin_by_organization(spread, 'Александров А.А', frequency_dictionary) # Сбор маржи определенной организации
+        first_org_margins = self.get_margin_by_organization(spread, frequency_dictionary) # Сбор маржи определенной организации
         
         print(warning_message + '\tБот взял паузу , чтобы избежать лимита на количество запросов в минуту.')
         # sleep(60) # Чтобы обойти лимит по количеству запросов Google API
 
-        second_org_margins = self.get_margin_by_organization(spread, "ИП Ермалович А.С", frequency_dictionary) # Сбор маржи определенной организации
+        second_org_margins = self.get_margin_by_organization(spread, frequency_dictionary) # Сбор маржи определенной организации
         self.save_result(first_org_margins, second_org_margins)
 
 
@@ -339,33 +339,48 @@ class Spreadsheet:
         Данный метод отвечает за подключение к таблице 
         """
 
-
         scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
         credentials = ServiceAccountCredentials.from_json_keyfile_name('morbot-338716-b219142d9c70.json', scope)
 
         gc = gspread.authorize(credentials)
         spread = gc.open_by_key(spread_id)
-
         return spread
 
-    def get_margin_by_organization(self, spread, organization, frequency_dictionary):
+
+    def get_margin_by_organization(self, spread, frequency_dictionary):
 
         """
         СОбираем маржу и высчитываем общую прибыль
         """
 
-
-        worksheet = self.open_worksheet(spread, organization) # открываем нужную страницу, полагаясь на название организации
-        col_margin = worksheet.find('Маржа').col
+        # worksheet = self.open_worksheet(spread, organization) # открываем нужную страницу, полагаясь на название организации
+        spread = self.auth_spread('1bGbNieNgqDNSORaphLhLOHUbIUE00yxA0q_b4HsNclM')
+        worksheets = spread.worksheets()   
+        print(worksheets)
         organization_margin_orders = []
+
         
         def collect_margin_orders(order):
             try:
-                row_order = worksheet.find(str(order))
-                if row_order != None:
-                    margin_order = worksheet.cell(row_order.row, col_margin).value
-                    amount_margin_order = float(margin_order.split('₽')[0].replace(',', '.')) * frequency_dictionary[order]
-                    organization_margin_orders.append((order, round(amount_margin_order, 2), frequency_dictionary[order]))
+                for worksheet in worksheets:
+
+                    row_order = worksheet.find(str(order))
+                    if row_order != None:
+                        print(order, worksheet)
+                        col_margin = worksheet.find('Маржа').col
+                        col_price = worksheet.find('Итог (клиент)').col
+                        col_share = worksheet.find('да/нет').col
+                    
+                        margin_order = worksheet.cell(row_order.row, col_margin).value
+                        price_order = worksheet.cell(row_order.row, col_price).value
+                        share_order = worksheet.cell(row_order.row, col_share).value
+                
+                        amount_margin_order = float(margin_order.split('₽')[0].replace(',', '.').replace(u'\xa0', u'')) * frequency_dictionary[order]
+                        amount_price_order = float(price_order.split('₽')[0].replace(',', '.').replace(u'\xa0', u''))        
+
+                        organization_margin_orders.append((order, round(amount_margin_order, 2), frequency_dictionary[order],
+                                                                round(amount_price_order, 2), share_order))
+                        break # Перестаем бегать по страницам
             except gspread.exceptions.APIError:
                 print(warning_message + '\tБот превысил лимит запросов. Автоматически продолжит работу через 20 секунд.')
                 sleep(20)
@@ -374,22 +389,9 @@ class Spreadsheet:
         for order in frequency_dictionary:
            collect_margin_orders(order) 
            
-        print(success_message + '\tСобрали маржу организации: ', organization)
+        print('Собрали информацию по товарам.')
         return organization_margin_orders
-
-    def open_worksheet(self, spread, worksheet_name):
-
-        """
-        САМЫЙ НЕУДАЧНЫЙ МЕТОД, КОТОРЫЙ В ОБЯЗАТЕЛЬНОМ ПОРЯДКЕ НУЖНО ИЗМЕНИТЬ НА ЧТО-ТО УНИВЕРСАЛЬНОЕ
-        """
-
-        if worksheet_name == 'Александров А.А':
-            return spread.get_worksheet(0)
-
-        elif worksheet_name == "ИП Ермалович А.С":
-            return spread.get_worksheet(1)
     
-
 
     def save_result(self, first_org, second_org):
 
@@ -401,13 +403,13 @@ class Spreadsheet:
 
         with open(filename, 'w') as file:
             for item in first_org:
-                file.write(f'{item[0]} - {item[1]}  - {item[2]} \n')
+                file.write(f'{item[0]} - {item[1]}  - {item[2]} - {item[3]} - {item[4]} \n')
 
             for item in second_org:
-                file.write(f'{item[0]} - {item[1]}  - {item[2]} \n')
+                file.write(f'{item[0]} - {item[1]}  - {item[2]} - {item[3]} - {item[4]} \n')
 
         print(success_message + '\tЗаписали файл ' + filename)
-        self.update_statistics_table()
+        # self.update_statistics_table()
 
 
     def update_statistics_table(self):
@@ -428,10 +430,12 @@ class Spreadsheet:
         
         print(warning_message + '\tОбновляем статистику')
 
-        def update_order(order, margin, count):
+        def update_order(order, margin, count, price, share):
             try:
                 order_row = worksheet.find(order).row + 1
                 order_count_row = order_row - 1
+                order_price_row = order_row + 1  
+                order_share_row = order_price_row + 1
                 tomorrow_col = worksheet.find(tomorrow).col
 
                 data_rows = worksheet.findall(tomorrow)
@@ -442,10 +446,13 @@ class Spreadsheet:
 
                 worksheet.update_cell(order_row, tomorrow_col, margin)
                 worksheet.update_cell(order_count_row, tomorrow_col, count)
+                worksheet.update_cell(order_price_row, tomorrow_col, price)
+                if share != 'None':
+                    worksheet.update_cell(order_share_row, tomorrow_col, share)
             except gspread.exceptions.APIError:
                 print(warning_message + '\tБот превысил лимит запросов. Автоматически продолжит работу через 20 секунд.')
                 sleep(20)
-                update_order(order, margin, count)
+                update_order(order, margin, count, price, share)
             except BaseException as error:
                 print(error)
 
@@ -455,8 +462,10 @@ class Spreadsheet:
                 order = line.split('-')[0].strip()
                 margin = line.split('-')[1].replace('\n', '').strip().replace('.', ',')
                 count = line.split('-')[2].strip()
+                price = line.split('-')[3].strip().replace('.', ',')
+                share = line.split('-')[4].strip().replace('\n', '')
                 
-                update_order(order, margin, count)
+                update_order(order, margin, count, price, share)
                 
                 
                 
@@ -466,25 +475,12 @@ class Spreadsheet:
 
 parse_method = int(input('Каким образом вы хотите спарсить данные?\n1. Selenuim\n2. Excel-файл\nУкажите номер варианта: '))
 
-if parse_method == 1:
-    bot_selenium = SeleniumParser(mysklag_login='vika@ermalovich1972', mysklag_password='Ugegeg')
-    bot_selenium.start()
-    bot_selenium.browser.quit()
 
-    frequen_dict = bot_selenium.get_frequency_dict()
+bot_excel = ExcelReader()
+frequen_dict = bot_excel.open_excel()
+spread = Spreadsheet()
+spread.run(frequen_dict)
 
-elif parse_method == 2:
-    # excel_path = input('Вставьте путь до excel-файла: ')
-
-    bot_excel = ExcelReader()
-    frequen_dict = bot_excel.open_excel()
-    # frequen_dict = bot_excel.get_frequency_dict()
-    spread = Spreadsheet()
-    spread.run(frequen_dict)
-else:
-    print('Нет такого варианта. Введите 1 или 2')
-    sleep(3)
-    quit()
 
 # ex = ExcelReader('/home/saloman/Downloads/02.01.xls')
 # frequen_dict = ex.get_frequency_dict()
