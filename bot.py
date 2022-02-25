@@ -66,7 +66,7 @@ os.makedirs(history_directory, exist_ok=True) # Создаем директор�
 success_message = '\033[2;30;42m [SUCCESS] \033[0;0m' 
 warning_message = '\033[2;30;43m [WARNING] \033[0;0m'
 
-parse_result_file =  f'{history_directory}/parser_result.txt'
+# parse_result_file =  f'{history_directory}/parser_result.txt'
 
 # if os.path.exists(parse_result_file):
     # os.remove(parse_result_file)
@@ -209,7 +209,6 @@ class SeleniumParser:
         print(success_message + '\tСохраняем собранные данные...')
 
         self.save_data(text_organizations, id_orders)
-        print(id_orders)
 
 
     def save_data(self, organizations, ids):
@@ -275,7 +274,12 @@ class ExcelReader:
             if ext in ('xls', 'xlsx'):
                 self.workbook = xlrd.open_workbook(f"Excel/{file}")
                 self.worksheet = self.workbook.sheet_by_index(0)
-                freq_dict = self.get_frequency_dict()
+                try:
+                    freq_dict = self.get_frequency_dict()
+                except gspread.exceptions.APIError:
+                    print(warning_message + '\tБот устал и прилёг отдохнуть на минутку...')
+                    sleep(61)
+                    freq_dict = self.get_frequency_dict()
                 os.remove(f"Excel/{file}")
                 return freq_dict
 
@@ -326,11 +330,10 @@ class Spreadsheet:
         print(success_message + '\tПодключились к таблице расчетов')
         first_org_margins = self.get_margin_by_organization(spread, frequency_dictionary) # Сбор маржи определенной организации
         
-        print(warning_message + '\tБот взял паузу , чтобы избежать лимита на количество запросов в минуту.')
         # sleep(60) # Чтобы обойти лимит по количеству запросов Google API
 
-        second_org_margins = self.get_margin_by_organization(spread, frequency_dictionary) # Сбор маржи определенной организации
-        self.save_result(first_org_margins, second_org_margins)
+        # second_org_margins = self.get_margin_by_organization(spread, frequency_dictionary) # Сбор маржи определенной организации
+        self.save_result(first_org_margins)
 
 
     def auth_spread(self, spread_id):
@@ -356,7 +359,6 @@ class Spreadsheet:
         # worksheet = self.open_worksheet(spread, organization) # открываем нужную страницу, полагаясь на название организации
         spread = self.auth_spread('1bGbNieNgqDNSORaphLhLOHUbIUE00yxA0q_b4HsNclM')
         worksheets = spread.worksheets()   
-        print(worksheets)
         organization_margin_orders = []
 
         
@@ -366,7 +368,7 @@ class Spreadsheet:
 
                     row_order = worksheet.find(str(order))
                     if row_order != None:
-                        print(order, worksheet)
+                        # print(order, worksheet)
                         col_margin = worksheet.find('Маржа').col
                         col_price = worksheet.find('Итог (клиент)').col
                         col_share = worksheet.find('да/нет').col
@@ -374,6 +376,8 @@ class Spreadsheet:
                         margin_order = worksheet.cell(row_order.row, col_margin).value
                         price_order = worksheet.cell(row_order.row, col_price).value
                         share_order = worksheet.cell(row_order.row, col_share).value
+                        if share_order == None:
+                            share_order = ''
                 
                         amount_margin_order = float(margin_order.split('₽')[0].replace(',', '.').replace(u'\xa0', u'')) * frequency_dictionary[order]
                         amount_price_order = float(price_order.split('₽')[0].replace(',', '.').replace(u'\xa0', u''))        
@@ -386,14 +390,15 @@ class Spreadsheet:
                 sleep(20)
                 collect_margin_orders(order)
 
+        print(success_message + '\tПроверяем доступную информацию о товарах.')
         for order in frequency_dictionary:
            collect_margin_orders(order) 
            
-        print('Собрали информацию по товарам.')
+        print(success_message + '\tСобрали информацию по товарам.')
         return organization_margin_orders
     
 
-    def save_result(self, first_org, second_org):
+    def save_result(self, first_org):
 
         """
         сохраняем результат для истории
@@ -405,11 +410,8 @@ class Spreadsheet:
             for item in first_org:
                 file.write(f'{item[0]} - {item[1]}  - {item[2]} - {item[3]} - {item[4]} \n')
 
-            for item in second_org:
-                file.write(f'{item[0]} - {item[1]}  - {item[2]} - {item[3]} - {item[4]} \n')
-
         print(success_message + '\tЗаписали файл ' + filename)
-        # self.update_statistics_table()
+        self.update_statistics_table()
 
 
     def update_statistics_table(self):
@@ -447,8 +449,8 @@ class Spreadsheet:
                 worksheet.update_cell(order_row, tomorrow_col, margin)
                 worksheet.update_cell(order_count_row, tomorrow_col, count)
                 worksheet.update_cell(order_price_row, tomorrow_col, price)
-                if share != 'None':
-                    worksheet.update_cell(order_share_row, tomorrow_col, share)
+                worksheet.update_cell(order_share_row, tomorrow_col, share)
+                quit()
             except gspread.exceptions.APIError:
                 print(warning_message + '\tБот превысил лимит запросов. Автоматически продолжит работу через 20 секунд.')
                 sleep(20)
@@ -473,7 +475,7 @@ class Spreadsheet:
 
 
 
-parse_method = int(input('Каким образом вы хотите спарсить данные?\n1. Selenuim\n2. Excel-файл\nУкажите номер варианта: '))
+# parse_method = int(input('Каким образом вы хотите спарсить данные?\n1. Selenuim\n2. Excel-файл\nУкажите номер варианта: '))
 
 
 bot_excel = ExcelReader()
